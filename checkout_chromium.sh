@@ -14,6 +14,9 @@ export DEPOT_TOOLS_METRICS=0
 export DEPOT_TOOLS_UPDATE=0
 
 run() { echo "$* (in ${PWD})"; "$@"; }
+die() { echo "$*"; exit 1; }
+
+
 
 if [[ ! -d "$chromium_root_dir" ]]; then
   run mkdir "$chromium_root_dir" || exit 1
@@ -38,7 +41,7 @@ if [[ ! -f "$chromium_root_dir/.gclient" ]]; then
   # src/build/install-build-deps-android.sh
 fi
 
-run gclient sync --with_branch_heads --with_tags --force --reset --nohooks || exit 1
+run gclient sync --with_branch_heads --with_tags --force --reset -D --nohooks || exit 1
 run gclient runhooks || exit 1
 
 exit 0
