@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+OS=`uname -s`
+HostOS=Linux
+case "$OS" in
+  Linux)    HostOS=Linux ;;
+  Darwin)   HostOS=Darwin ;;
+  CYGWIN*)  HostOS=CYGWIN;  echo "Unsupported OS ${OS}"; exit 1;;
+  MINGW*)   HostOS=MINGW;   echo "Unsupported OS ${OS}"; exit 1;;
+  *)        HostOS=Unknown; echo "Unsupported OS ${OS}"; exit 1;;
+esac
+
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 
 depot_tools_repo="https://chromium.googlesource.com/chromium/tools/depot_tools.git"
@@ -15,6 +25,11 @@ export DEPOT_TOOLS_UPDATE=0
 
 run() { echo "$* (in ${PWD})"; "$@"; }
 die() { echo "$*"; exit 1; }
+
+sed_inplace_opt=("-i")
+if [[ $HostOS == Darwin ]] && ! sed --version &>/dev/null; then
+  sed_inplace_opt=("-i" "")
+fi
 
 
 
@@ -40,6 +55,9 @@ if [[ ! -f "$chromium_root_dir/.gclient" ]]; then
   run fetch --nohooks android || exit 1
   # src/build/install-build-deps-android.sh
 fi
+
+sed "${sed_inplace_opt[@]}" -e "/^target_os/d" "$chromium_root_dir/.gclient"
+echo 'target_os = ["android", "linux"]' >>  "$chromium_root_dir/.gclient"
 
 run gclient sync --with_branch_heads --with_tags --force --reset -D --nohooks || exit 1
 run gclient runhooks || exit 1
