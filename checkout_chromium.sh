@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# usage:
+# $0
+# $0 [revision]
+
+# get android revision
+# curl 'https://chromereleases.googleblog.com/search/label/Chrome%20for%20Android' | grep -o 'just released Chrome .*for Android'
+
 OS=`uname -s`
 HostOS=Linux
 case "$OS" in
@@ -32,6 +39,8 @@ if [[ $HostOS == Darwin ]] && ! sed --version &>/dev/null; then
 fi
 
 
+revision="${1:-master}"
+
 
 if [[ ! -d "$chromium_root_dir" ]]; then
   run mkdir "$chromium_root_dir" || exit 1
@@ -54,6 +63,14 @@ which gclient || exit 1
 if [[ ! -f "$chromium_root_dir/.gclient" ]]; then
   run fetch --nohooks android || exit 1
   # src/build/install-build-deps-android.sh
+else
+  if run git --git-dir="$chromium_src_dir/.git" fetch origin "$revision" >/dev/null; then
+    run git --git-dir="$chromium_src_dir/.git" --work-tree="$chromium_src_dir" checkout -f FETCH_HEAD || exit 1
+  else
+    run git --git-dir="$chromium_src_dir/.git" fetch origin || exit 1
+    run git --git-dir="$chromium_src_dir/.git" --work-tree="$chromium_src_dir" checkout -f "$revision" || exit 1
+  fi
+
 fi
 
 sed "${sed_inplace_opt[@]}" -e "/^target_os/d" "$chromium_root_dir/.gclient"
